@@ -18,10 +18,9 @@ const PARTICLE_COUNT = 15000;
 const getTextPoints = (text: string, fontSize: number = 120) => {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d')!;
-  canvas.width = 1000;
-  canvas.height = 300;
+  canvas.width = 1200; // 稍微加宽以适应长句子
+  canvas.height = 400; // 增加高度缓冲区
   ctx.fillStyle = 'white';
-  // 使用粗壮的系统字体确保粒子覆盖效果好
   ctx.font = `bold ${fontSize}px "Microsoft YaHei", "SimHei", "Inter", sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -30,9 +29,10 @@ const getTextPoints = (text: string, fontSize: number = 120) => {
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
   const sampledPoints: { x: number, y: number }[] = [];
   
-  // 步长采样以防点位过多，同时保证覆盖文字
-  for (let y = 0; y < canvas.height; y += 1) {
-    for (let x = 0; x < canvas.width; x += 1) {
+  // 增加采样步长（step=2），减少点位总数，确保粒子能覆盖到底部
+  const step = 2; 
+  for (let y = 0; y < canvas.height; y += step) {
+    for (let x = 0; x < canvas.width; x += step) {
       const alpha = imageData[(y * canvas.width + x) * 4 + 3];
       if (alpha > 128) {
         sampledPoints.push({
@@ -42,6 +42,14 @@ const getTextPoints = (text: string, fontSize: number = 120) => {
       }
     }
   }
+
+  // 洗牌算法：打乱点位顺序
+  // 这样即使粒子数少于点位数，粒子也会均匀分布在文字各处，而不是只堆积在顶部
+  for (let i = sampledPoints.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [sampledPoints[i], sampledPoints[j]] = [sampledPoints[j], sampledPoints[i]];
+  }
+
   return sampledPoints;
 };
 
@@ -146,7 +154,7 @@ const Particles: React.FC<{ model: ParticleModel; color: string; handData: HandD
   // 提前计算各个文字模式的点位
   const bdayTextPoints = useMemo(() => getTextPoints("生日快乐"), []);
   const bdayEnTextPoints = useMemo(() => getTextPoints("Happy Birthday", 100), []);
-  const songYueqiPoints = useMemo(() => getTextPoints("宋岳琪", 150), []);
+  const duMengjiePoints = useMemo(() => getTextPoints("杜梦洁，生日快乐", 80), []); // 稍微减小字号确保完整性
   
   useEffect(() => {
     for (let i = 0; i < PARTICLE_COUNT; i++) {
@@ -179,8 +187,8 @@ const Particles: React.FC<{ model: ParticleModel; color: string; handData: HandD
             p.set(textPt.x, textPt.y, (Math.random() - 0.5) * 2);
             break;
         }
-        case ParticleModel.SONG_YUEQI: {
-            const textPt = songYueqiPoints[i % songYueqiPoints.length];
+        case ParticleModel.TEXT_DUMENGJIE: {
+            const textPt = duMengjiePoints[i % duMengjiePoints.length];
             p.set(textPt.x, textPt.y, (Math.random() - 0.5) * 2);
             break;
         }
@@ -190,7 +198,7 @@ const Particles: React.FC<{ model: ParticleModel; color: string; handData: HandD
       targetPositions[i * 3 + 1] = p.y;
       targetPositions[i * 3 + 2] = p.z;
     }
-  }, [model, targetPositions, bdayTextPoints, bdayEnTextPoints, songYueqiPoints]);
+  }, [model, targetPositions, bdayTextPoints, bdayEnTextPoints, duMengjiePoints]);
 
   useFrame((state) => {
     const time = state.clock.getElapsedTime();
@@ -211,8 +219,8 @@ const Particles: React.FC<{ model: ParticleModel; color: string; handData: HandD
     
     // 在显示文字模式时，减缓旋转速度以保证可读性
     const isTextModel = model === ParticleModel.TEXT_BDAY || 
-                       model === ParticleModel.TEXT_BDAY_EN || 
-                       model === ParticleModel.SONG_YUEQI;
+                       model === ParticleModel.TEXT_BDAY_EN ||
+                       model === ParticleModel.TEXT_DUMENGJIE;
     const rotationSpeed = isTextModel ? 0.0005 : 0.002;
     pointsRef.current.rotation.y += rotationSpeed;
   });

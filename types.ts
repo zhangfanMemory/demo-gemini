@@ -9,7 +9,7 @@ export enum ParticleModel {
   CELEBRATION = 'Party',
   TEXT_BDAY = 'Happy Bday (CN)',
   TEXT_BDAY_EN = 'Happy Bday (EN)',
-  SONG_YUEQI = '宋岳琪'
+  TEXT_DUMENGJIE = '杜梦洁，生日快乐'
 }
 
 export interface HandData {
