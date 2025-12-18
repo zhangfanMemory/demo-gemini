@@ -22,7 +22,7 @@ const getTextPoints = (text: string, fontSize: number = 120) => {
   canvas.height = 300;
   ctx.fillStyle = 'white';
   // 使用粗壮的系统字体确保粒子覆盖效果好
-  ctx.font = `bold ${fontSize}px "Inter", "Microsoft YaHei", sans-serif`;
+  ctx.font = `bold ${fontSize}px "Microsoft YaHei", "SimHei", "Inter", sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(text, canvas.width / 2, canvas.height / 2);
@@ -143,10 +143,10 @@ const Particles: React.FC<{ model: ParticleModel; color: string; handData: HandD
   const positions = useMemo(() => new Float32Array(PARTICLE_COUNT * 3), []);
   const targetPositions = useMemo(() => new Float32Array(PARTICLE_COUNT * 3), []);
   
-  // 提前计算汉字点位
+  // 提前计算各个文字模式的点位
   const bdayTextPoints = useMemo(() => getTextPoints("生日快乐"), []);
-  // 提前计算英文点位
   const bdayEnTextPoints = useMemo(() => getTextPoints("Happy Birthday", 100), []);
+  const songYueqiPoints = useMemo(() => getTextPoints("宋岳琪", 150), []);
   
   useEffect(() => {
     for (let i = 0; i < PARTICLE_COUNT; i++) {
@@ -179,13 +179,18 @@ const Particles: React.FC<{ model: ParticleModel; color: string; handData: HandD
             p.set(textPt.x, textPt.y, (Math.random() - 0.5) * 2);
             break;
         }
+        case ParticleModel.SONG_YUEQI: {
+            const textPt = songYueqiPoints[i % songYueqiPoints.length];
+            p.set(textPt.x, textPt.y, (Math.random() - 0.5) * 2);
+            break;
+        }
       }
       
       targetPositions[i * 3] = p.x;
       targetPositions[i * 3 + 1] = p.y;
       targetPositions[i * 3 + 2] = p.z;
     }
-  }, [model, targetPositions, bdayTextPoints, bdayEnTextPoints]);
+  }, [model, targetPositions, bdayTextPoints, bdayEnTextPoints, songYueqiPoints]);
 
   useFrame((state) => {
     const time = state.clock.getElapsedTime();
@@ -203,8 +208,11 @@ const Particles: React.FC<{ model: ParticleModel; color: string; handData: HandD
     }
     
     posAttr.needsUpdate = true;
+    
     // 在显示文字模式时，减缓旋转速度以保证可读性
-    const isTextModel = model === ParticleModel.TEXT_BDAY || model === ParticleModel.TEXT_BDAY_EN;
+    const isTextModel = model === ParticleModel.TEXT_BDAY || 
+                       model === ParticleModel.TEXT_BDAY_EN || 
+                       model === ParticleModel.SONG_YUEQI;
     const rotationSpeed = isTextModel ? 0.0005 : 0.002;
     pointsRef.current.rotation.y += rotationSpeed;
   });

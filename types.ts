@@ -8,7 +8,8 @@ export enum ParticleModel {
   CAKE = 'Birthday',
   CELEBRATION = 'Party',
   TEXT_BDAY = 'Happy Bday (CN)',
-  TEXT_BDAY_EN = 'Happy Bday (EN)'
+  TEXT_BDAY_EN = 'Happy Bday (EN)',
+  SONG_YUEQI = '宋岳琪'
 }
 
 export interface HandData {

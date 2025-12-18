@@ -12,6 +12,7 @@ const App: React.FC = () => {
   const [handData, setHandData] = useState<HandData | null>(null);
   const [showImageGen, setShowImageGen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -35,16 +36,18 @@ const App: React.FC = () => {
       />
 
       {/* Camera Feed Container */}
-      <div className="absolute top-6 left-6 w-56 h-40 rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-neutral-900/50 backdrop-blur-sm z-30 group transition-all duration-500 hover:border-green-500/50">
+      <div className="absolute top-6 left-6 w-40 h-28 md:w-56 md:h-40 rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-neutral-900/50 backdrop-blur-sm z-30 group transition-all duration-500 hover:border-green-500/50">
         <HandTracker onHandUpdate={setHandData} />
         <div className="absolute bottom-0 inset-x-0 p-2 bg-gradient-to-t from-black/80 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
-          <p className="text-[10px] text-white/70 uppercase tracking-widest text-center">Hand Motion Sensor</p>
+          <p className="text-[8px] md:text-[10px] text-white/70 uppercase tracking-widest text-center">Hand Motion Sensor</p>
         </div>
       </div>
 
       {/* UI Controls - Right Panel */}
       <div className="absolute right-0 top-0 h-full z-40 pointer-events-none">
         <Sidebar 
+          isOpen={isSidebarOpen}
+          onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
           currentModel={currentModel}
           onModelChange={setCurrentModel}
           color={particleColor}
