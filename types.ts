@@ -4,7 +4,11 @@ export enum ParticleModel {
   FLOWER = 'Flower',
   SATURN = 'Saturn',
   BUDDHA = 'Zen',
-  FIREWORKS = 'Fireworks'
+  FIREWORKS = 'Fireworks',
+  CAKE = 'Birthday',
+  CELEBRATION = 'Party',
+  TEXT_BDAY = 'Happy Bday (CN)',
+  TEXT_BDAY_EN = 'Happy Bday (EN)'
 }
 
 export interface HandData {

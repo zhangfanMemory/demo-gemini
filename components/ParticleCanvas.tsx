@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { useFrame, Canvas } from '@react-three/fiber';
 import { ParticleModel, HandData } from '../types';
 
-// Alias Three.js intrinsic elements to Uppercase variables to bypass JSX type check issues in some environments
+// Alias Three.js intrinsic elements
 const Points = 'points' as any;
 const BufferGeometry = 'bufferGeometry' as any;
 const BufferAttribute = 'bufferAttribute' as any;
@@ -13,6 +13,37 @@ const AmbientLight = 'ambientLight' as any;
 const PointLight = 'pointLight' as any;
 
 const PARTICLE_COUNT = 15000;
+
+// Helper: 从文字生成像素点位
+const getTextPoints = (text: string, fontSize: number = 120) => {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d')!;
+  canvas.width = 1000;
+  canvas.height = 300;
+  ctx.fillStyle = 'white';
+  // 使用粗壮的系统字体确保粒子覆盖效果好
+  ctx.font = `bold ${fontSize}px "Inter", "Microsoft YaHei", sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+  const sampledPoints: { x: number, y: number }[] = [];
+  
+  // 步长采样以防点位过多，同时保证覆盖文字
+  for (let y = 0; y < canvas.height; y += 1) {
+    for (let x = 0; x < canvas.width; x += 1) {
+      const alpha = imageData[(y * canvas.width + x) * 4 + 3];
+      if (alpha > 128) {
+        sampledPoints.push({
+          x: (x - canvas.width / 2) * 0.08,
+          y: (canvas.height / 2 - y) * 0.08
+        });
+      }
+    }
+  }
+  return sampledPoints;
+};
 
 const getHeartPoint = (t: number) => {
   const x = 16 * Math.pow(Math.sin(t), 3);
@@ -30,57 +61,93 @@ const getFlowerPoint = (t: number) => {
 
 const getSaturnPoint = (t: number, i: number) => {
   if (i < PARTICLE_COUNT * 0.6) {
-    // Planet
     const phi = Math.acos(-1 + (2 * i) / (PARTICLE_COUNT * 0.6));
     const theta = Math.sqrt(PARTICLE_COUNT * 0.6 * Math.PI) * phi;
-    return new THREE.Vector3(
-      7 * Math.sin(phi) * Math.cos(theta),
-      7 * Math.sin(phi) * Math.sin(theta),
-      7 * Math.cos(phi)
-    );
+    return new THREE.Vector3(7 * Math.sin(phi) * Math.cos(theta), 7 * Math.sin(phi) * Math.sin(theta), 7 * Math.cos(phi));
   } else {
-    // Rings
     const angle = Math.random() * Math.PI * 2;
     const radius = 10 + Math.random() * 5;
-    return new THREE.Vector3(
-      radius * Math.cos(angle),
-      radius * Math.sin(angle) * 0.2, // Tilt
-      radius * Math.sin(angle)
-    );
+    return new THREE.Vector3(radius * Math.cos(angle), radius * Math.sin(angle) * 0.2, radius * Math.sin(angle));
   }
 };
 
 const getZenPoint = (t: number, i: number) => {
-    // A simplified silhouette of a seated figure
     const y = (Math.random() - 0.5) * 15;
     const width = Math.max(0.2, (1 - Math.abs(y / 7.5)) * 5);
     const angle = Math.random() * Math.PI * 2;
-    return new THREE.Vector3(
-        Math.cos(angle) * width * Math.random(),
-        y,
-        Math.sin(angle) * width * Math.random()
-    );
+    return new THREE.Vector3(Math.cos(angle) * width * Math.random(), y, Math.sin(angle) * width * Math.random());
 };
 
 const getFireworkPoint = (t: number) => {
   const radius = Math.random() * 12;
   const phi = Math.random() * Math.PI * 2;
   const theta = Math.random() * Math.PI;
-  return new THREE.Vector3(
-    radius * Math.sin(theta) * Math.cos(phi),
-    radius * Math.sin(theta) * Math.sin(phi),
-    radius * Math.cos(theta)
-  );
+  return new THREE.Vector3(radius * Math.sin(theta) * Math.cos(phi), radius * Math.sin(theta) * Math.sin(phi), radius * Math.cos(theta));
+};
+
+const getCakePoint = (t: number, i: number) => {
+  const cakeParticles = PARTICLE_COUNT * 0.94;
+  if (i < cakeParticles) {
+    const tier = i % 3;
+    let radius, height, yOffset;
+    if (tier === 0) { radius = 9; height = 4.5; yOffset = -7; }
+    else if (tier === 1) { radius = 6.5; height = 4.5; yOffset = -2.5; }
+    else { radius = 4.5; height = 4; yOffset = 2; }
+    const angle = Math.random() * Math.PI * 2;
+    const r = Math.sqrt(Math.random()) * radius;
+    const h = Math.random() * height;
+    return new THREE.Vector3(r * Math.cos(angle), h + yOffset, r * Math.sin(angle));
+  } else if (i < PARTICLE_COUNT * 0.99) {
+    const angle = Math.random() * Math.PI * 2;
+    const r = Math.random() * 0.3;
+    const h = Math.random() * 3.5;
+    return new THREE.Vector3(r * Math.cos(angle), h + 6, r * Math.sin(angle));
+  } else {
+    const angle = Math.random() * Math.PI * 2;
+    const r = Math.random() * 0.8;
+    const h = Math.random() * 1.5;
+    return new THREE.Vector3(r * Math.cos(angle) * 0.5, h + 9.5, r * Math.sin(angle) * 0.5);
+  }
+};
+
+const getCelebrationPoint = (t: number, i: number) => {
+    if (i < PARTICLE_COUNT * 0.5) {
+        const x = (Math.random() - 0.5) * 10;
+        const y = (Math.random() - 0.5) * 10 - 5;
+        const z = (Math.random() - 0.5) * 10;
+        return new THREE.Vector3(x, y, z);
+    } else if (i < PARTICLE_COUNT * 0.6) {
+        const isHorizontal = Math.random() > 0.5;
+        if (isHorizontal) {
+            return new THREE.Vector3((Math.random() - 0.5) * 11, -5 + (Math.random() - 0.5) * 0.5, (Math.random() - 0.5) * 11);
+        } else {
+            return new THREE.Vector3((Math.random() - 0.5) * 0.5, (Math.random() - 0.5) * 11 - 5, (Math.random() - 0.5) * 11);
+        }
+    } else {
+        const balloonIndex = i % 3;
+        const offsets = [
+            new THREE.Vector3(-4, 8, 0),
+            new THREE.Vector3(4, 10, 2),
+            new THREE.Vector3(0, 12, -3)
+        ];
+        const offset = offsets[balloonIndex];
+        const phi = Math.random() * Math.PI * 2;
+        const theta = Math.random() * Math.PI;
+        const r = Math.random() * 3.5;
+        return new THREE.Vector3(r * Math.sin(theta) * Math.cos(phi) + offset.x, r * Math.sin(theta) * Math.sin(phi) + offset.y, r * Math.cos(theta) + offset.z);
+    }
 };
 
 const Particles: React.FC<{ model: ParticleModel; color: string; handData: HandData | null }> = ({ model, color, handData }) => {
   const pointsRef = useRef<THREE.Points>(null!);
-  
-  // Base positions
   const positions = useMemo(() => new Float32Array(PARTICLE_COUNT * 3), []);
   const targetPositions = useMemo(() => new Float32Array(PARTICLE_COUNT * 3), []);
   
-  // Random initial positions
+  // 提前计算汉字点位
+  const bdayTextPoints = useMemo(() => getTextPoints("生日快乐"), []);
+  // 提前计算英文点位
+  const bdayEnTextPoints = useMemo(() => getTextPoints("Happy Birthday", 100), []);
+  
   useEffect(() => {
     for (let i = 0; i < PARTICLE_COUNT; i++) {
       positions[i * 3] = (Math.random() - 0.5) * 50;
@@ -89,7 +156,6 @@ const Particles: React.FC<{ model: ParticleModel; color: string; handData: HandD
     }
   }, [positions]);
 
-  // Update target positions when model changes
   useEffect(() => {
     for (let i = 0; i < PARTICLE_COUNT; i++) {
       const t = (i / PARTICLE_COUNT) * Math.PI * 2;
@@ -101,57 +167,54 @@ const Particles: React.FC<{ model: ParticleModel; color: string; handData: HandD
         case ParticleModel.SATURN: p = getSaturnPoint(t, i); break;
         case ParticleModel.BUDDHA: p = getZenPoint(t, i); break;
         case ParticleModel.FIREWORKS: p = getFireworkPoint(t); break;
+        case ParticleModel.CAKE: p = getCakePoint(t, i); break;
+        case ParticleModel.CELEBRATION: p = getCelebrationPoint(t, i); break;
+        case ParticleModel.TEXT_BDAY: {
+            const textPt = bdayTextPoints[i % bdayTextPoints.length];
+            p.set(textPt.x, textPt.y, (Math.random() - 0.5) * 2);
+            break;
+        }
+        case ParticleModel.TEXT_BDAY_EN: {
+            const textPt = bdayEnTextPoints[i % bdayEnTextPoints.length];
+            p.set(textPt.x, textPt.y, (Math.random() - 0.5) * 2);
+            break;
+        }
       }
       
       targetPositions[i * 3] = p.x;
       targetPositions[i * 3 + 1] = p.y;
       targetPositions[i * 3 + 2] = p.z;
     }
-  }, [model, targetPositions]);
+  }, [model, targetPositions, bdayTextPoints, bdayEnTextPoints]);
 
   useFrame((state) => {
     const time = state.clock.getElapsedTime();
     const posAttr = pointsRef.current.geometry.attributes.position;
-    
-    // Hand span influence: 0.5 is neutral, >0.5 is expansion, <0.5 is contraction
     const expansion = handData ? handData.span * 2.5 : 1.0;
     
     for (let i = 0; i < PARTICLE_COUNT; i++) {
       const i3 = i * 3;
-      
-      // Morphing interpolation
-      // Add explicit casting to number for TypedArray elements to avoid arithmetic errors
       posAttr.array[i3] += (targetPositions[i3] * expansion - (posAttr.array[i3] as number)) * 0.08;
       posAttr.array[i3+1] += (targetPositions[i3+1] * expansion - (posAttr.array[i3+1] as number)) * 0.08;
       posAttr.array[i3+2] += (targetPositions[i3+2] * expansion - (posAttr.array[i3+2] as number)) * 0.08;
       
-      // Subtle float animation
       posAttr.array[i3] = (posAttr.array[i3] as number) + Math.sin(time + i) * 0.01;
       posAttr.array[i3+1] = (posAttr.array[i3+1] as number) + Math.cos(time + i) * 0.01;
     }
     
     posAttr.needsUpdate = true;
-    pointsRef.current.rotation.y += 0.002;
+    // 在显示文字模式时，减缓旋转速度以保证可读性
+    const isTextModel = model === ParticleModel.TEXT_BDAY || model === ParticleModel.TEXT_BDAY_EN;
+    const rotationSpeed = isTextModel ? 0.0005 : 0.002;
+    pointsRef.current.rotation.y += rotationSpeed;
   });
 
   return (
     <Points ref={pointsRef}>
       <BufferGeometry>
-        <BufferAttribute
-          attach="attributes-position"
-          count={positions.length / 3}
-          array={positions}
-          itemSize={3}
-        />
+        <BufferAttribute attach="attributes-position" count={positions.length / 3} array={positions} itemSize={3} />
       </BufferGeometry>
-      <PointsMaterial
-        size={0.08}
-        color={color}
-        transparent
-        opacity={0.8}
-        blending={THREE.AdditiveBlending}
-        depthWrite={false}
-      />
+      <PointsMaterial size={0.08} color={color} transparent opacity={0.8} blending={THREE.AdditiveBlending} depthWrite={false} />
     </Points>
   );
 };
