@@ -1,0 +1,7 @@
+{
+  "name": "ZenParticle: Interactive 3D Gesture Particles",
+  "description": "A high-performance 3D particle system using Three.js and MediaPipe Hands for gesture-based control, featuring morphing shapes and Gemini-powered image generation.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
